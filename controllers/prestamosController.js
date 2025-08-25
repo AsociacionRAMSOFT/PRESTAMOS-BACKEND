@@ -252,7 +252,6 @@ exports.deletePrestamo = async (req, res) => {
     }
 };
 
-// FUNCIÓN DE PAGO CON LÓGICA CORREGIDA PARA "NO PAGO"
 exports.createPago = async (req, res) => {
     const { id: prestamo_id } = req.params;
     const { monto, fecha, source } = req.body;
@@ -261,7 +260,6 @@ exports.createPago = async (req, res) => {
         return res.status(400).json({ error: 'El monto no es válido.' });
     }
 
-    // El destino es opcional si el monto es 0
     if (monto > 0 && !['nequi', 'efectivo'].includes(source)) {
         return res.status(400).json({ error: 'El destino del capital no es válido.' });
     }
@@ -276,7 +274,6 @@ exports.createPago = async (req, res) => {
             return res.status(404).json({ error: 'El préstamo no fue encontrado.' });
         }
         
-        // Solo actualizamos el capital si el monto es mayor a 0
         if (monto > 0) {
             const capitalSql = `
                 INSERT INTO capital (source, amount) VALUES (?, ?)
@@ -289,13 +286,11 @@ exports.createPago = async (req, res) => {
         const nuevoEstado = nuevoSaldo <= 0 ? 'pagado' : 'debe';
         const pagado = nuevoSaldo <= 0 ? 1 : 0;
         
-        // El 'destination' se guardará como 'ninguno' si el monto es 0
         await db.run(
             'INSERT INTO pagos (prestamo_id, monto, fecha, destination) VALUES (?, ?, ?, ?)',
             [prestamo_id, monto, fecha, source || 'ninguno']
         );
         
-        // Solo actualizamos el saldo si el monto es mayor a 0
         if (monto > 0) {
             await db.run(
                 'UPDATE prestamos SET saldo_restante = ?, estado = ?, pagado = ? WHERE id = ?',
@@ -351,14 +346,20 @@ exports.getReporteDiario = async (req, res) => {
 exports.getReporteGanancias = async (req, res) => {
     try {
         const db = await getDBConnection();
+        const { fechaInicio, fechaFin } = req.query;
+        let queryPrestado = `SELECT SUM(monto_prestado) AS total FROM prestamos`;
+        let queryGanado = `SELECT SUM(monto_total - monto_prestado) AS total FROM prestamos WHERE estado = 'pagado'`;
+        
+        const params = [];
+        
+        if (fechaInicio && fechaFin) {
+            queryPrestado += ` WHERE fecha BETWEEN ? AND ?`;
+            queryGanado += ` AND fecha BETWEEN ? AND ?`;
+            params.push(fechaInicio, fechaFin, fechaInicio, fechaFin);
+        }
 
-        const totalPrestado = await db.get(`
-            SELECT SUM(monto_prestado) AS total FROM prestamos
-        `);
-
-        const totalGanado = await db.get(`
-            SELECT SUM(monto_total - monto_prestado) AS total FROM prestamos WHERE estado = 'pagado'
-        `);
+        const totalPrestado = await db.get(queryPrestado, params.slice(0, 2));
+        const totalGanado = await db.get(queryGanado, params.slice(2, 4));
 
         res.status(200).json({
             total_prestado: totalPrestado.total || 0,

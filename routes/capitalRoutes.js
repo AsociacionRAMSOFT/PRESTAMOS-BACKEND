@@ -1,10 +1,14 @@
-//PRESTAMOS-BACKEND/routes/capitalRoutes.js
+// PRESTAMOS-BACKEND/routes/capitalRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const capitalController = require('../controllers/capitalController');
 
 // GET /api/capital -> Obtener montos actuales
 router.get('/', capitalController.getCapital);
+
+// GET /api/capital/history -> Obtener el historial de capital
+router.get('/history', capitalController.getCapitalHistory);
 
 // POST /api/capital -> Actualizar los montos
 router.post('/', capitalController.updateCapital);

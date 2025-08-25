@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS pagos (
     prestamo_id INTEGER NOT NULL,
     monto REAL NOT NULL,
     fecha TEXT NOT NULL,
-    destination TEXT NOT NULL DEFAULT 'efectivo' CHECK(destination IN ('nequi', 'efectivo', 'ninguno')), -- ¡CORRECCIÓN AQUÍ!
+    destination TEXT NOT NULL DEFAULT 'efectivo' CHECK(destination IN ('nequi', 'efectivo', 'ninguno')),
     FOREIGN KEY (prestamo_id) REFERENCES prestamos(id) ON DELETE CASCADE
 );
 
@@ -43,6 +43,14 @@ CREATE TABLE IF NOT EXISTS pagos (
 CREATE TABLE IF NOT EXISTS capital (
     source TEXT PRIMARY KEY,
     amount REAL NOT NULL DEFAULT 0
+);
+
+-- NUEVA TABLA PARA EL HISTORIAL DE CAPITAL
+CREATE TABLE IF NOT EXISTS capital_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source TEXT NOT NULL,
+    amount REAL NOT NULL,
+    fecha TEXT NOT NULL
 );
 
 -- Índices para mejorar la velocidad de las búsquedas
